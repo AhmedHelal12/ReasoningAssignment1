@@ -10,10 +10,10 @@ def eliminate_implification(exp):
     temp2=re.sub(r'<=>',r'&',temp1)
     return temp2
 
-# Example usage
-# input_expression = "(P->Q) & (~(Q->R)) <=> (P->R)"
-# result = eliminate_implification(input_expression)
-# print("Result after elimination:", result)
+
+# input_expression = "(P(x) -> Q(x) ) & (~(Q(y) -> R(y))) <=> (P(y) -> R(x))"
+# result1 = eliminate_implification(input_expression)
+# print("Result after elimination:", result1)
 
 
 
@@ -23,9 +23,9 @@ def eliminate_implification(exp):
 
 def move_negation(exp):
     # Move negations inward for conjunction (AND) expressions
-    temp1 = re.sub(r'~\((\w+)&(\w+)\)', r'(~\1|~\2)', exp)
+    temp1 = re.sub(r'~\((\w+)\s+&\s+(\w+)\)', r'(~\1\|\~\2)', exp)
     # Move negations inward for disjunction (OR) expressions
-    temp2 = re.sub(r'~\((\w+)\|(\w+)\)', r'(~\1&~\2)', temp1)
+    temp2 = re.sub(r'~\((\w+)\|(\w+)\)', r'(~\1\&\~\2)', temp1)
     # Replace A with E 
     temp3 = re.sub(r'~Ax:(\w+)', r'Ex:~\1', temp2)
 
@@ -35,7 +35,7 @@ def move_negation(exp):
     return temp4
 
 # Example usage
-# input_expression = "(~P&Q) | ~(R&S) ~Ax:P"
+# input_expression = "(~P(x) & Q(x)) | ~(R(x) & S(x) ) ~Ax:P(x) ~Ex:P(x)"
 # result = move_negation(input_expression)
 # print("Result after moving negations inward and replacing quantifiers:", result)
 
@@ -44,7 +44,7 @@ def remove_double_not(exp):
     print(temp1)
     return temp1
 
-# input_expression="~~B ~~C"
+# input_expression="~~P(x) & ~~Q(x)"
 # result=remove_double_not(input_expression)
 # print('Result after removing the double not:',result)
 
@@ -55,7 +55,7 @@ def standardize_variable(exp):
     return temp1
 
 # Example usage
-# input_expression = "P(x) & Q(x)"
+# input_expression = "P(x) & Q(x) "
 # result = standardize_variable(input_expression)
 # print("Result after standardizing variables:", result)
 
@@ -72,11 +72,11 @@ def to_prenex_normal_form(exp):
     # remove :
     remaining_exp=re.sub(r':','',temp)
     # Combine reordered quantified expressions and the remaining expression
-    prenex_normal_form = reordered_exp + remaining_exp
+    prenex_normal_form = reordered_exp +':'+ remaining_exp
     return prenex_normal_form
 
-# # Example usage
-# input_expression = "Ez: Px & Ay: Qy"
+# Example usage
+# input_expression = "Ex: Px & Ay: Qy"
 # result = to_prenex_normal_form(input_expression)
 # print("Prenex normal form:", result)
 
@@ -87,10 +87,57 @@ def skolemization(exp):
     )
 
     # Apply Skolemization by replacing existential quantifiers with new characters
-    temp1 = re.sub(r'Ex(\w+)(\(\w+\))', lambda match: match.group(1) + generate_new_char(exp) , exp)
+    temp1 = re.sub(r'E\w+(\w+)\((\w+)\)', lambda match: f'{match.group(1)}({generate_new_char(exp)})', exp)
     return temp1
 
 # Example usage
-input_expression = "ExP(x) EyZ(y)"
+input_expression = "ExP(x) & EyZ(y) | Ax: P(x) & Ay: C(y)"
 result = skolemization(input_expression)
 print("Skolemized expression:", result)
+
+def eliminate_universal(exp):
+    temp=re.sub('A\w+:','',exp)
+    return temp
+
+# print(eliminate_universal(result))
+
+
+
+def applyDistribution(exp):
+    # Apply distribution by converting (P | (Q & R)) to (P & Q) | (P & R)
+    temp = re.sub(r'(\w+\(\w\))\s+\|\s+\((\w+\(\w\))\s+&\s+(\w+\(\w\))\)', r'\1 & \2 | \1 & \3', exp)
+    print(temp)
+    return temp
+
+# # Example usage
+# result = applyDistribution('P(x) | (Q(x) & M(x))')
+# print("Result after applying distribution:", result)
+
+def turnIntoClauses(exp):
+    temp=re.split(r'\|',exp)
+
+    return temp
+
+clauses=turnIntoClauses('P(x) & Q(x) | P(y) & M(y) | C(c) & B(n)')
+print(clauses)
+
+def uniqueVariablesNames(clauses):
+    
+    chars=[]
+    for clause in clauses:
+         for char in clause:
+            if char.islower():
+                chars.append(char)
+                break
+    
+    for num,clause in enumerate(clauses):
+        for char in clause:
+            if char==chars[num+1]:
+                unique_char = next((c for c in "abcdefghijklmnopqrstuvwxyz" if c not in chars), None)
+                char=unique_char
+            print(num,char)
+
+
+    return clauses
+
+# print(uniqueVariablesNames(clauses))
